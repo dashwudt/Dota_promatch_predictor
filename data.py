@@ -95,7 +95,7 @@ def updhelper(game_type,min_id = 99999999999,last_match_time=datetime.datetime.n
 
     if game_type == 'ladder':
         for i in tqdm(dic):
-            #print(datetime.datetime.fromisoformat(i['last_match_time'][:-1]),type(datetime.datetime.fromisoformat(i['last_match_time'][:-1])))
+            print(i)
             try:
                 last_match_time_ig = datetime.datetime.fromisoformat(i['last_match_time'][:-1])
                 if last_match_time - last_match_time_ig < td:
@@ -264,9 +264,12 @@ def get_log5(pA,pB):
     return (pA-pA*pB)/(pA+pB-2*pA*pB)
 
 
-def create_rivalry_matrix(df:pd.DataFrame):
-    df = df.iloc[:, :10].copy()
+def create_rivalry_matrix(wv:KeyedVectors):
     hl = get_Localized_hero_list()
+    arr = np.zeros((124,124))
     for hero_id in hl['id']:
         response = requests.get(f'https://api.opendota.com/api/heroes/{hero_id}/matchups')
         dic = response.json()
+        for hero in dic:
+            arr[hero_id][wv.key_to_index(hero['hero_id'])] = float(hero['wins'])/float(hero['games_played'])
+    pd.DataFrame(arr).to_csv('rivalry_matrix.csv',index=False)
