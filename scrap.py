@@ -3,7 +3,7 @@ from selenium.webdriver import ChromeOptions
 import time
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
-
+import undetected_chromedriver as uc
 
 Main_url = "https://bifrost.oddin.gg/?referer=https%3A%2F%2Fbetboom.ru%2Fesport&lang=ru&currency=RUB&token=&brandToken=b94ac61d-b060-4892-8242-923bf2303a38"
 
@@ -11,10 +11,11 @@ Main_url = "https://bifrost.oddin.gg/?referer=https%3A%2F%2Fbetboom.ru%2Fesport&
 def get_live_html(avoid, url=Main_url):
     matches=[]
     options = ChromeOptions()
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     driver = webdriver.Chrome(options=options)
+    #driver = uc.Chrome(headless=False, use_subprocess=True)
     driver.get(url)
-    time.sleep(10)
+    time.sleep(20)
     try:
         live_button = driver.find_element(By.XPATH,'/html/body/div[1]/div[3]/div/div[2]/div/div[2]/div/div[2]')
     except:
@@ -24,7 +25,7 @@ def get_live_html(avoid, url=Main_url):
             print('Problem actualy here')
             return matches
     live_button.click()
-    time.sleep(3)
+    time.sleep(5)
     is_dota = False
     locator = 2
     while not is_dota:
@@ -52,25 +53,29 @@ def get_live_html(avoid, url=Main_url):
 
     if int(matches_count):
         dota.click()
-        time.sleep(5)
+        time.sleep(10)
     else:
         print('Problem here!!!')
         return matches
                                        # Счет
     games = []
     if int(matches_count)>1:
-        for s in range(2,int(matches_count)+2):
-                          #/html/body/div[1]/div[3]/div/div[2]/div/div[3]/div/div/div[2]/div[1]/div[5]
-                          #/html/body/div[1]/div[3]/div/div[2]/div/div[3]/div/div/div[3]/div[1]/div[5]
-            games.append(f'/html/body/div[1]/div[3]/div/div[2]/div/div[3]/div/div/div[{s}]/div[1]/div[5]')
+        for s in range(1,int(matches_count)+1):
+                          #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[1]/div[2]/div[1]/div[5]
+                          #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[2]/div[2]/div[1]/div[5]
+                          #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[3]/div[2]/div[1]/div[5]
+            games.append(f'/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[{s}]/div[2]/div[1]/div[5]')
     elif int(matches_count) == 1:
                      #/html/body/div[1]/div[3]/div/div[2]/div/div[3]/div/div/div[2]/div[1]/div[5]
         games.append('/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div/div[2]/div[1]/div[5]')
     print(len(games))
     for game in games:
-        driver.find_element(By.XPATH, game).click()
-        time.sleep(5)
-        for _ in range(90):
+        try:
+            driver.find_element(By.XPATH, game).click()
+            time.sleep(10)
+        except:
+            continue
+        for _ in range(60):
             try:
                 soup = BeautifulSoup(driver.page_source, 'lxml')
                 Team_A = soup.find_all('div', 'max-h-[30px] overflow-hidden break-all')[0].text
@@ -89,6 +94,7 @@ def get_live_html(avoid, url=Main_url):
                     break
                 Match_number = soup.find_all('div', 'truncate pb-px text-sm font-normal text-match-detail/scoreboard/label')[-1].text
             except:
+                time.sleep(1)
                 continue
             try:
                 Coefficient_A = soup.find_all('span', 'text-match-detail/card/header-map'
@@ -112,9 +118,15 @@ def get_live_html(avoid, url=Main_url):
                 break
             except:
                 time.sleep(1)
-        arrow = driver.find_element(By.XPATH, '/html/body/div[1]/div[3]/div/div[1]/div/div/div[1]/div/div[1]')
-        arrow.click()
-        time.sleep(5)
+                continue
+        if int(matches_count)>1:
+            try:
+                arrow = driver.find_element(By.XPATH, '/html/body/div[1]/div[3]/div[1]/div/div/div[1]/div/div[1]')
+                arrow.click()
+                time.sleep(5)
+            except:
+                return matches
+
     driver.quit()
     return matches
 

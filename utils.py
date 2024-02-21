@@ -1,10 +1,18 @@
 import numpy as np
 import pandas as pd
+
+import model_stuf
 from model_stuf import *
 from gensim.models import KeyedVectors
 
-
-
+def get_coef(df,cassiifier):
+    wv = KeyedVectors.load('word_vectors.kv')
+    X = df
+    X, _ = xy(X, wv)
+    X = xgb.DMatrix(X)
+    hero_pred = cassiifier.predict(X)
+    rp = (hero_pred[0])
+    return rp
 def kelly(bank, classifier, df, rad_team_name, dire_team_name, coeff):
     wv = KeyedVectors.load('word_vectors.kv')
     X = df
@@ -14,7 +22,8 @@ def kelly(bank, classifier, df, rad_team_name, dire_team_name, coeff):
     X = xgb.DMatrix(X)
 
     hero_pred = classifier.predict(X)
-    rp = (hero_pred[0])
+    rp_g = model_stuf.get_glicko_prob(rad_team_name,dire_team_name)
+    rp = (hero_pred[0]+rp_g)/2
     print(hero_pred, rp)
     dp = (1 - rp)
     cr = (1 / rp)

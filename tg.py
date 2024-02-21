@@ -25,7 +25,9 @@ dp = Dispatcher()
 
 async def schedule_messages():
     while True:
+        print(time.localtime())
         await send_model_output()
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Done~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         await asyncio.sleep(300)
 
 
@@ -38,7 +40,7 @@ async def send_model_output():
     bad_matches = []
     for game in vhs['games']:
         try:
-            if (game['scoreboard']['duration']+game['stream_delay_s'])<=(game['stream_delay_s']+60):
+            if (game['scoreboard']['duration']+game['stream_delay_s'])<=(game['stream_delay_s']+400):
                 print(game['radiant_team']['team_name'], ' ', game['dire_team']['team_name'], ' ', round(game["scoreboard"]["duration"]/60,2), 'stream delay: ',game['stream_delay_s'])
                 continue
             else:
@@ -86,8 +88,10 @@ async def send_model_output():
             else:
                 continue
         if df.empty:
+            print('df empty')
             rtn = 'err'
             dtn = 'err'
+            continue
         else:
             try:
                 rtn = game['radiant_team']['team_name']
@@ -100,13 +104,17 @@ async def send_model_output():
         for match in matches:
             A, B, Game, Coeff_A, Coeff_B = match
             if dtn.strip().capitalize() == A.strip().capitalize() or rtn.strip().capitalize() == B.strip().capitalize():
-                out = utils.kelly(430, clf, df, rtn, dtn, coeff=[Coeff_B, Coeff_A])
+                out = utils.kelly(100, clf, df, rtn, dtn, coeff=[Coeff_B, Coeff_A])
                 await bot.send_message(chat_id, text=(Game + '\n' + str(out)))
                 break
             elif dtn.strip().capitalize() == B.strip().capitalize() or rtn.strip().capitalize() == A.strip().capitalize():
-                out = utils.kelly(430, clf, df, rtn, dtn,coeff=[Coeff_A,Coeff_B])
+                out = utils.kelly(100, clf, df, rtn, dtn,coeff=[Coeff_A,Coeff_B])
                 await bot.send_message(chat_id, text=(Game + '\n' + str(out)))
                 break
+            #else:
+            #    rp = utils.get_coef(df,clf)
+            #    await bot.send_message(chat_id, text=(rtn +' ' + dtn + '\n' + str(rp) +' '+ str(1-rp)))
+            #    break
         await asyncio.sleep(2)
 
 def start_tg():

@@ -9,22 +9,24 @@ from data import *
 from tg import *
 from model_stuf import *
 from gensim.models import KeyedVectors
+import matplotlib.pyplot as pl
+import shap
 
-
-
-
-
-#update_wv(150)
 
 update_data()
-#read_data(50)
-#wv = KeyedVectors.load('word_vectors.kv')
-#qwe(wv=wv)
 
-#update_model()
+X,Y = update_model()
+
+current_model = xgb.Booster()    # init model
+current_model.load_model('model.json')
+
+gini_scores(model = current_model,X = X,Y = Y,model_name='model')
+
+xv=X['Big']
+
+explainer = shap.TreeExplainer(current_model)
+shap_values = explainer.shap_values(xv)
+shap.summary_plot(shap_values, xv)
 
 
-
-#start_tg()
-
-
+start_tg()

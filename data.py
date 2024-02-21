@@ -145,8 +145,12 @@ def updhelper(game_type,min_id = 99999999999,last_match_time=datetime.datetime.n
 
 
 def update_data():
+    get_dat_dota_team_ratings()
     updhelper('ladder')
     updhelper('progames')
+    update_wv(5)
+    wv = KeyedVectors.load('word_vectors.kv')
+    create_rivalry_matrix(wv)
 
 
 def get_dat_dota_team_ratings():
@@ -162,59 +166,59 @@ def get_dat_dota_team_ratings():
 def get_Localized_hero_list(api = d2api.APIWrapper(api_key='A0D129625665186D9C1E0BDBF6A0F7A9', parse_response=False)):
     l = json.loads(api.get_heroes())
     Localized_hero_list = l['result']['heroes']
-    q = list(filter(lambda Localized_hero_list: Localized_hero_list['id'] == 1, Localized_hero_list))[0]['name'][14:]
-    #print(q)
+    #q = list(filter(lambda Localized_hero_list: Localized_hero_list['id'] == 1, Localized_hero_list))[0]['name'][14:]
     return Localized_hero_list
 
-
-def update_wv(vector_size):
+def read_data(include_today:bool):
     today_unix = time.time()
+    today = time.strftime("%Y-%m-%d")
     old_ladder_data = pd.DataFrame(columns=['r1', 'r2', 'r3', 'r4', 'r5', 'd1', 'd2', 'd3', 'd4', 'd5', 'radiant_win'])
     old_pro_data = pd.DataFrame(columns=['r1', 'r2', 'r3', 'r4', 'r5', 'd1', 'd2', 'd3', 'd4', 'd5', 'radiant_win'])
-    for filename in os.listdir('ladder/'):
-        if today_unix - os.path.getctime(
-                f'ladder/{filename}') < 24 * 60 * 60 * 30:
-            oldy = pd.read_csv(f'ladder/{filename}')  # ??
+    new_ladder_data = pd.read_csv(f'ladder/hero_data_{today}.csv')
+    new_pro_data = pd.read_csv(f'progames/hero_data_{today}.csv')
+    if include_today:
+        mask = lambda x, _: x < 24 * 60 * 60 * 30
+    else:
+        mask = lambda x, y: x < 24 * 60 * 60 * 30 and y != f'hero_data_{today}.csv'
+
+    for y in os.listdir('ladder/'):
+        x = today_unix - os.path.getctime(f'ladder/{y}')
+        if mask(x, y):
+            oldy = pd.read_csv(f'ladder/{y}')  # ??
             old_ladder_data = pd.concat([oldy, old_ladder_data], join='inner')
-    for filename in os.listdir('progames/'):
-        if today_unix - os.path.getctime(f'progames/{filename}') < 24 * 60 * 60 * 30:  # last 10 days
-            oldy = pd.read_csv(f'progames/{filename}')
+    for y in os.listdir('progames/'):
+        x = today_unix - os.path.getctime(f'ladder/{y}')
+        if mask(x, y):  # last 10 days
+            oldy = pd.read_csv(f'progames/{y}')
             old_pro_data = pd.concat([oldy, old_pro_data], join='inner')
     Bigus = pd.concat([old_ladder_data, old_pro_data], join='inner')
+    return Bigus, new_ladder_data, new_pro_data, old_ladder_data, old_pro_data
+
+def update_wv(vector_size):
+    Bigus,_,_,_,_ = read_data(True)
     wv = model_stuf.w2v(Bigus, vector_size)
     wv.save('word_vectors.kv')
 
-def read_data():
+def get_data():
     wv = KeyedVectors.load('word_vectors.kv')
-    today = time.strftime("%Y-%m-%d")
-    today_unix = time.time()
-    new_ladder_data = pd.read_csv(f'ladder/hero_data_{today}.csv')
-    new_pro_data = pd.read_csv(f'progames/hero_data_{today}.csv')
-    old_ladder_data = pd.DataFrame(columns=['r1', 'r2', 'r3', 'r4', 'r5', 'd1', 'd2', 'd3', 'd4', 'd5', 'radiant_win'])
-    old_pro_data = pd.DataFrame(columns=['r1', 'r2', 'r3', 'r4', 'r5', 'd1', 'd2', 'd3', 'd4', 'd5', 'radiant_win'])
-    for filename in os.listdir('ladder/'):
-        if today_unix - os.path.getctime(f'ladder/{filename}') < 24*60*60*30 and filename != f'hero_data_{today}.csv':
-            oldy = pd.read_csv(f'ladder/{filename}')                                                                    #??
-            old_ladder_data = pd.concat([oldy,old_ladder_data],join='inner')
-    for filename in os.listdir('progames/'):
-        if today_unix - os.path.getctime(f'progames/{filename}') < 24*60*60*30 and filename != f'hero_data_{today}.csv':                                          #last 10 days
-            oldy = pd.read_csv(f'progames/{filename}')
-            old_pro_data = pd.concat([oldy,old_pro_data],join='inner')
+    _, new_ladder_data, new_pro_data, old_ladder_data, old_pro_data = read_data(False)
 
     today_ladder_X, today_ladder_Y = xy(new_ladder_data, wv)
     today_pro_X, today_pro_Y       = xy(new_pro_data, wv)
     old_ladder_X, old_ladder_Y     = xy(old_ladder_data, wv)
     old_pro_X, old_pro_Y           = xy(old_pro_data, wv)
 
-    Big_X = pd.concat([old_ladder_X,today_ladder_X,old_pro_X,today_pro_X],join='inner')
-    Big_Y = pd.concat([old_ladder_Y,today_ladder_Y,old_pro_Y,today_pro_Y],join='inner')
+    Big_X = pd.concat([old_ladder_X,today_ladder_X,old_pro_X,today_pro_X],join='inner',ignore_index=True)
+    Big_Y = pd.concat([old_ladder_Y,today_ladder_Y,old_pro_Y,today_pro_Y],join='inner',ignore_index=True)
+
+    #Big_X.reset_index(inplace=True)
+
 
     x ={'old_ladder':old_ladder_X, 'old_pro':old_pro_X, 'today_ladder':today_ladder_X,
         'today_pro':today_pro_X, 'Big': Big_X}
     y = {'old_ladder': old_ladder_Y, 'old_pro': old_pro_Y, 'today_ladder': today_ladder_Y,
           'today_pro': today_pro_Y, 'Big': Big_Y}
-
-    return x, y
+    return x,y
 
 def xy(df, wv):
     df[:10] = df[:10].astype(int)
@@ -225,8 +229,9 @@ def xy(df, wv):
     except:
         X = df
         Y=None
-    #X = new_one_hot(wv,X)
+    cdf = pd.DataFrame(get_counter_df(df,wv))
     X = concat_hero2vec(word_vectors=wv, df=X)
+    X = pd.concat([X,cdf],ignore_index=True, axis=1)
     return X, Y
 
 def new_one_hot(word_vectors,df):
@@ -258,18 +263,68 @@ def concat_hero2vec(word_vectors,df):
     return x
 
 
-#feature_vectors = np.hstack([df[f'feature_vector{i}'].values.tolist() for i in range(1, 11)])
-
 def get_log5(pA,pB):
     return (pA-pA*pB)/(pA+pB-2*pA*pB)
 
 
-def create_rivalry_matrix(wv:KeyedVectors):
+def create_rivalry_matrix(wv):
+    #Big,_,_,_,_ = read_data(True)
+    #Big.reset_index(inplace=True,drop=True)
+    #Bigs = Big.iloc[:, :10].copy()
     hl = get_Localized_hero_list()
-    arr = np.zeros((124,124))
-    for hero_id in hl['id']:
-        response = requests.get(f'https://api.opendota.com/api/heroes/{hero_id}/matchups')
+    hero_count = len(hl)
+    arr = np.zeros((hero_count,hero_count))
+    for hero_id in hl:
+        total_matches = 0
+        total_wins = 0
+        hero_id_i = wv.key_to_index[hero_id['id']]
+        #col_ser = wdf.eq(hero_id['id'],axis=0).idxmax(axis=1)
+        #wins = Big.loc[col_ser.index].copy()
+        #for i, heros in wdf.iterrows():
+        #    if col_ser[i][0] == 'r':
+        #        win = wins['radiant_win'][i]
+        #    else:
+        #        win = not wins['radiant_win'][i]
+        #    for h in heros:
+        #        arr_cw[hero_id_i][wv.key_to_index[h]] += float(win)
+        #        arr_ct[hero_id_i][wv.key_to_index[h]] += 1.0
+        #print(arr_cw[hero_id_i])
+        #print(arr_ct[hero_id_i])
+        #for hss in hl:
+        #    hss_id_i = wv.key_to_index[hss['id']]
+        #    #print(arr_cw[hero_id_i][hss_id_i])
+        #    arr[hero_id_i][hss_id_i] = (arr_cw[hero_id_i][hss_id_i]/arr_ct[hero_id_i][hss_id_i])
+        response = requests.get(f'https://api.opendota.com/api/heroes/{hero_id["id"]}/matchups')
+        while response.status_code != 200:
+            time.sleep(10)
+            response = requests.get(f'https://api.opendota.com/api/heroes/{hero_id["id"]}/matchups')
         dic = response.json()
         for hero in dic:
-            arr[hero_id][wv.key_to_index(hero['hero_id'])] = float(hero['wins'])/float(hero['games_played'])
+            total_wins += float(hero['wins'])
+            total_matches += float(hero['games_played'])
+            arr[hero_id_i][wv.key_to_index[hero['hero_id']]] = float(hero['wins'])/float(hero['games_played'])
+        arr[hero_id_i][hero_id_i] = total_wins/total_matches
+    df = pd.DataFrame(arr)
     pd.DataFrame(arr).to_csv('rivalry_matrix.csv',index=False)
+
+def get_counter_value(heroidlist_radiant, heroidlist_dire, wv):
+    l=[]
+    rm = pd.read_csv('rivalry_matrix.csv').to_numpy()
+    for i in heroidlist_radiant:
+        ll=[]
+        for j in heroidlist_dire:
+            rh = wv.key_to_index[i]
+            dh = wv.key_to_index[j]
+            real = rm[rh][dh]
+            l5 = get_log5(rm[rh][rh], rm[dh][dh])
+            ll.append(real-l5)
+        l.append(np.average(np.array(ll)))
+    return l
+
+def get_counter_df(dff,wv):
+    df = dff.reset_index(drop=True)
+    arr = np.zeros((len(df),5))
+    for i,v in df.iterrows():
+        arr[i] = get_counter_value(v[:5].values,v[5:10].values,wv)
+    return arr
+
