@@ -35,6 +35,7 @@ async def send_model_output():
     try:
         vhs = api.get_live_league_games()
     except:
+        print('cant get matches')
         raise
 
     bad_matches = []

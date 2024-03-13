@@ -11,22 +11,32 @@ from model_stuf import *
 from gensim.models import KeyedVectors
 import matplotlib.pyplot as pl
 import shap
+import cProfile
+import pstats
+from tests import *
 
 
-update_data()
 
-X,Y = update_model()
+def main():
+    #update_data()
+    #update_wv(50)
 
-current_model = xgb.Booster()    # init model
-current_model.load_model('model.json')
-
-gini_scores(model = current_model,X = X,Y = Y,model_name='model')
-
-xv=X['Big']
-
-explainer = shap.TreeExplainer(current_model)
-shap_values = explainer.shap_values(xv)
-shap.summary_plot(shap_values, xv)
+    #test_remove_least_frequent()
+    #print("Test passed!")
+    #wv = KeyedVectors.load('word_vectors.kv')
+    #qwe(wv)
+    #print(wv.key_to_index)
+    #update_wv(5)
+    update_model()
+    #start_tg()
 
 
-start_tg()
+cProfile.run('main()', 'profile_stats')
+
+p = pstats.Stats('profile_stats')
+
+p.sort_stats('cumulative').print_stats(10)
+
+
+
+

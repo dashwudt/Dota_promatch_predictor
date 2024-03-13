@@ -62,6 +62,7 @@ def get_live_html(avoid, url=Main_url):
     if int(matches_count)>1:
         for s in range(1,int(matches_count)+1):
                           #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[1]/div[2]/div[1]/div[5]
+                          #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[1]/div[2]/div[1]/div[5]
                           #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[2]/div[2]/div[1]/div[5]
                           #/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[3]/div[2]/div[1]/div[5]
             games.append(f'/html/body/div[1]/div[3]/div[2]/div/div[3]/div/div[{s}]/div[2]/div[1]/div[5]')
@@ -74,6 +75,7 @@ def get_live_html(avoid, url=Main_url):
             driver.find_element(By.XPATH, game).click()
             time.sleep(10)
         except:
+            print('no game here:(')
             continue
         for _ in range(60):
             try:
@@ -94,6 +96,7 @@ def get_live_html(avoid, url=Main_url):
                     break
                 Match_number = soup.find_all('div', 'truncate pb-px text-sm font-normal text-match-detail/scoreboard/label')[-1].text
             except:
+                print('no soup')
                 time.sleep(1)
                 continue
             try:
