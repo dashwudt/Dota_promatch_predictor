@@ -1,8 +1,3 @@
-
-
-from
-
-
 API_TOKEN = '6652552891:AAGDAFGbNYcTp0Bb4adRMGR4w8dLecaghbc'
 
 
