@@ -5,7 +5,6 @@ import requests
 import json
 from tqdm import tqdm
 import pandas as pd
-import d2api
 import time
 from datetime import timedelta
 import os
@@ -13,7 +12,7 @@ import numpy as np
 import model_stuf
 from gensim.models import KeyedVectors
 from sklearn.mixture import GaussianMixture
-
+import config
 
 
 def create_draft_data_set_in_loop(matches,game_type):
@@ -151,7 +150,7 @@ def create_draft_data_set(matches,game_type):
 
 def updhelper(game_type,min_id = 99999999999,last_match_time=datetime.datetime.now()):
     td = timedelta(days = 30)
-    api = d2api.APIWrapper(api_key='A0D129625665186D9C1E0BDBF6A0F7A9', parse_response=False)
+    api = config.d2api_wrapper
     max_id = 0
     if game_type == 'ladder':
         response = requests.get('https://api.opendota.com/api/proPlayers')
@@ -235,7 +234,7 @@ def get_dat_dota_team_ratings():
     return df
 
 
-def get_Localized_hero_list(api = d2api.APIWrapper(api_key='A0D129625665186D9C1E0BDBF6A0F7A9', parse_response=False)):
+def get_Localized_hero_list(api = config.d2api_wrapper ):
     l = json.loads(api.get_heroes())
     Localized_hero_list = l['result']['heroes']
     #q = list(filter(lambda Localized_hero_list: Localized_hero_list['id'] == 1, Localized_hero_list))[0]['name'][14:]
@@ -391,8 +390,8 @@ def fetch_matches(game_type, min_id):
 
 def create_new_dataset(game_type, min_id=99999999999, last_match_time=datetime.datetime.now(),max_id=0):
     td = datetime.timedelta(days=30)
-    api = d2api.APIWrapper(api_key='A0D129625665186D9C1E0BDBF6A0F7A9', parse_response=False)
-    dic = fetch_matches(game_type, min_id)  # API key and other details should be handled within fetch_matches
+    api = config.d2api_wrapper
+    dic = fetch_matches(game_type, min_id)
     try:
         with open(f'last_id_new_{game_type}.txt', 'r', encoding='utf-8') as f:
             break_id = int(f.readline())

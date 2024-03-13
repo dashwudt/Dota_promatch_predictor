@@ -5,19 +5,19 @@ import model_stuf
 from model_stuf import *
 from gensim.models import KeyedVectors
 
-def get_coef(df,cassiifier):
+def get_coef(df,cassiifier,rm):
     wv = KeyedVectors.load('word_vectors.kv')
     X = df
-    X, _ = xy(X, wv)
+    X, _ = xy(X, wv, rm)
     X = xgb.DMatrix(X)
     hero_pred = cassiifier.predict(X)
     rp = (hero_pred[0])
     return rp
-def kelly(bank, classifier, df, rad_team_name, dire_team_name, coeff):
+def kelly(bank, classifier, df, rad_team_name, dire_team_name, coeff, rm):
     wv = KeyedVectors.load('word_vectors.kv')
     X = df
 
-    X,_ = xy(X,wv)
+    X,_ = xy(X,wv, rm)
 
     X = xgb.DMatrix(X)
 

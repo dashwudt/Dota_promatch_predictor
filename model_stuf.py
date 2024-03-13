@@ -1,15 +1,9 @@
-import numpy as np
-import pandas as pd
-from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.metrics import roc_auc_score
 import xgboost as xgb
 from gensim.models import Word2Vec
 from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
 from data import *
 import optuna
-import joblib
-from gensim.models import KeyedVectors
-from sklearn.utils.multiclass import type_of_target
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 import math
